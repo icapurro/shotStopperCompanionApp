@@ -314,6 +314,7 @@ export const useBLEConnection = () => {
                 );
             console.log("wrote characteristic", characteristic, value)
         } catch (error) {
+            await disconnectFromDevice();
             throw error;
         }
     };
@@ -335,6 +336,7 @@ export const useBLEConnection = () => {
             }));
         } catch (error) {
             setSettings(prev => ({ ...prev, [key]: previousValue }));
+            await disconnectFromDevice();
             throw error;
         } finally {
             setIsLoading(false);

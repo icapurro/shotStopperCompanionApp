@@ -36,7 +36,7 @@
     <resources>
         <image name="SplashScreenLogo" width="200" height="200"/>
         <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="1.00000000000000" green="1.00000000000000" red="1.00000000000000" customColorSpace="sRGB" colorSpace="custom"/>
+            <color alpha="1.000" blue="0.878431372549020" green="0.905882352941176" red="0.913725490196078" customColorSpace="sRGB" colorSpace="custom"/>
         </namedColor>
     </resources>
 </document>

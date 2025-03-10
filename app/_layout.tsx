@@ -10,6 +10,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DeviceSettingsProvider } from './hooks/DeviceSettingsContext';
 import BLEConnectionGuard from './components/BLEConnectionGuard';
+import { initialize } from '@microsoft/react-native-clarity';
+
+// Initialize Clarity
+initialize("qm8srg6dza");
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
