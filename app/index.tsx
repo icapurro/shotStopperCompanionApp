@@ -36,21 +36,28 @@ const ITEM_SPACING = (width - ITEM_SIZE) / 2;
 export default function App() {
     const { theme } = useThemeContext();
     const colors = theme.colors;
-  const initialTimer = 36 - start;
   const router = useRouter();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
   const animatedStopValue = React.useRef(new Animated.Value(0)).current;
   const animatedLoadingValue = React.useState(new Animated.Value(0))[0];
   const weightValue = React.useRef(new Animated.Value(height)).current;
   const textAnimatedValue = React.useRef(new Animated.Value(height)).current;
-  const [goalWeight, setGoalWeight] = React.useState(weights[initialTimer]);
+//   const [goalWeight, setGoalWeight] = React.useState(weights[initialTimer]);
   const [currentWeight, setCurrentWeight] = React.useState(weights[0]);
-  const scrollX = React.useRef(new Animated.Value(initialTimer * ITEM_SIZE)).current;
   const lastVibrationIndex = React.useRef(0);
   const flatList = React.createRef();
   const navigation = useNavigation();
   const pathname = usePathname();
-  const { deviceId, isConnected, isScanning } = useBLEConnectionContext();
+  const { 
+    deviceId, 
+    isConnected, 
+    isLoading: bleLoading,
+    weightValue: goalWeight,
+    updateAutoTare,
+    updateWeightValue,
+  } = useBLEConnectionContext();
+
+  const scrollX = React.useRef(new Animated.Value((goalWeight - start) * ITEM_SIZE)).current;
   
   const peripheralConfig = React.useMemo(() => ({
     deviceId: deviceId!,
@@ -61,15 +68,6 @@ export default function App() {
     }
   }), [deviceId]);
 
-  const { 
-    settings,
-    isLoading: bleLoading,
-    updateAutoTare,
-    readAutoTare, 
-    updateWeightValue,
-    readWeightValue,
-  } = usePeripheralSettings(peripheralConfig);
-
   React.useEffect(() => {
     navigation.setOptions({
       headerLeft: () => null, // Hide the back button in the header (optional)
@@ -78,21 +76,9 @@ export default function App() {
   }, [navigation]);
 
   React.useEffect(() => {
-    readWeightValue().then(value => {
-      console.log("weightValue", value)
-      setCurrentWeight(value);
-    });
-  }, []);
-
-  React.useEffect(() => {
     const listener = textAnimatedValue.addListener(({ value }) => {
       console.log("value", value)
       setCurrentWeight(value);
-      if (isConnected) {
-        updateAutoTare(value).catch(error => {
-          console.error('Failed to update timer value:', error);
-        });
-      }
     });
 
     return () => {
@@ -300,7 +286,7 @@ export default function App() {
           showsHorizontalScrollIndicator={false}
           data={weights}
           keyExtractor={(item) => item.toString()}
-          initialScrollIndex={initialTimer}
+          initialScrollIndex={goalWeight - start}
           horizontal
           getItemLayout={(data, index) => ({
             length: ITEM_SIZE, // Adjust based on item width
@@ -313,7 +299,6 @@ export default function App() {
           style={{ flexGrow: 0, opacity }}
           onMomentumScrollEnd={(e) => {
             const value = weights[Math.round(e.nativeEvent.contentOffset.x / ITEM_SIZE)];
-            setGoalWeight(value);
             if (isConnected) {
               updateWeightValue(value).catch(error => {
                 console.error('Failed to update weight value:', error);
