@@ -1,6 +1,3 @@
-// Inspiration: https://dribbble.com/shots/2343572-Countdown-timer
-// 👉 Output of the code: https://twitter.com/mironcatalin/status/1321856493382238208
-
 import * as React from "react";
 import {
   Animated,
@@ -13,16 +10,12 @@ import {
   View,
   Text,
 } from "react-native";
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, usePathname, useRouter } from "expo-router";
-import { useTheme } from "@react-navigation/native";
 import { useThemeContext } from "./hooks/useThemeContext";
-import { StatusBar } from "expo-status-bar";
 import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
-import { usePeripheralSettings } from './hooks/usePeripheralSettings';
 const { width, height } = Dimensions.get("screen");
 const color = {
   black: "#111110",

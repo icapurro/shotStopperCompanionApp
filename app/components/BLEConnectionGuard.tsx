@@ -1,21 +1,17 @@
-import { useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { useRouter } from 'expo-router';
-import { View as MView, Text as MText } from 'moti';
+import { View, StyleSheet } from 'react-native';
+import { View as MView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useThemeContext } from '../hooks/useThemeContext';
 import { BLEConnectionProvider, useBLEConnectionContext } from '../contexts/BLEConnectionContext';
-import { usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { isLoading } from 'expo-font';
 
 interface BLEConnectionGuardProps {
     children: React.ReactNode;
 }
 
 function Guard({ children }: { children: React.ReactNode }) {
-    const { isConnected, isScanning, connectToDevice } = useBLEConnectionContext();
+    const { isConnected, isScanning } = useBLEConnectionContext();
     const { theme, isDarkMode } = useThemeContext();
     const colors = theme.colors;
 
@@ -47,21 +43,6 @@ function Guard({ children }: { children: React.ReactNode }) {
             </View>
         );
     }
-
-    // if (!isConnected && !isScanning) {
-    //     return (
-    //         <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-    //             <View
-    //                 style={[styles.dot, styles.center, { backgroundColor: colors.primary }]}
-    //             >
-    //                 <Feather name="bluetooth" size={32} color={colors.white} onPress={async () => await connectToDevice()}/>
-                    
-    //             </View>
-    //             <Text style={{ color: colors.text }}>No connection found. Tap to connect.</Text>
-    //             <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-    //         </View>
-    //     );
-    // }
 
     return (
         <>{children}</>

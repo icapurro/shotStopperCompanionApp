@@ -1,12 +1,10 @@
 import * as React from 'react';
-import { ActivityIndicator, SafeAreaView, TouchableOpacity, View, Pressable, StyleSheet, Animated, Text, ScrollView, Switch, Platform } from 'react-native';
+import { ActivityIndicator, SafeAreaView, TouchableOpacity, View, StyleSheet, Animated, Text, ScrollView, Switch, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { router, usePathname, useRouter } from 'expo-router';
-import { MotiTransitionProp, View as MView } from 'moti';
+import { usePathname, useRouter } from 'expo-router';
 import { Easing } from 'react-native-reanimated';
 import { useThemeContext } from './hooks/useThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { MyDarkTheme, MyLightTheme } from '@/constants/Colors';
 import { Slider } from 'react-native-awesome-slider';
 import { useSharedValue } from 'react-native-reanimated';
