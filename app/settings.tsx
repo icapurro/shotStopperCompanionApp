@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     paragraph: {
-        fontSize: 12,
+        fontSize: 14,
         fontFamily: "MenloRegular",
     },
     titleText: {

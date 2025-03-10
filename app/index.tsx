@@ -42,7 +42,6 @@ export default function App() {
   const animatedLoadingValue = React.useState(new Animated.Value(0))[0];
   const weightValue = React.useRef(new Animated.Value(height)).current;
   const textAnimatedValue = React.useRef(new Animated.Value(height)).current;
-//   const [goalWeight, setGoalWeight] = React.useState(weights[initialTimer]);
   const [currentWeight, setCurrentWeight] = React.useState(weights[0]);
   const lastVibrationIndex = React.useRef(0);
   const flatList = React.createRef();
@@ -431,7 +430,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   smallText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "MenloRegular",
     fontWeight: "400",
   },

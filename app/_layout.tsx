@@ -18,7 +18,7 @@ const AppContent = () => {
   const { theme, isDarkMode } = useThemeContext();
   
   return (
-    <>
+    <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
       <Stack
         screenOptions={{
           headerStyle: {
@@ -29,7 +29,7 @@ const AppContent = () => {
             fontWeight: 'bold',
           },
           contentStyle: { 
-            backgroundColor: '#111110'
+            backgroundColor: theme.colors.background
           },
           animation: 'fade',
           freezeOnBlur: true,
@@ -52,7 +52,7 @@ const AppContent = () => {
         />
       </Stack>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-    </>
+    </SafeAreaProvider>
   );
 };
 
@@ -83,9 +83,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <BLEConnectionGuard>
           <DeviceSettingsProvider>
-            <SafeAreaProvider>
-              <AppContent />
-            </SafeAreaProvider>
+            <AppContent />
           </DeviceSettingsProvider>
         </BLEConnectionGuard>
       </ThemeProvider>
