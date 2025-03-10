@@ -21,7 +21,7 @@ import { useNavigation, usePathname, useRouter } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import { useThemeContext } from "./hooks/useThemeContext";
 import { StatusBar } from "expo-status-bar";
-import { useBLEConnection } from './hooks/useBLEConnection';
+import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
 import { usePeripheralSettings } from './hooks/usePeripheralSettings';
 const { width, height } = Dimensions.get("screen");
 const color = {
@@ -50,7 +50,7 @@ export default function App() {
   const flatList = React.createRef();
   const navigation = useNavigation();
   const pathname = usePathname();
-  const { deviceId, isConnected, isScanning } = useBLEConnection();
+  const { deviceId, isConnected, isScanning } = useBLEConnectionContext();
   
   const peripheralConfig = React.useMemo(() => ({
     deviceId: deviceId!,

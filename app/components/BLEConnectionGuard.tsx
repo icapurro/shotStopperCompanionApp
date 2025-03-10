@@ -6,37 +6,26 @@ import { Easing } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useBLEConnection } from '../hooks/useBLEConnection';
 import { useThemeContext } from '../hooks/useThemeContext';
+import { BLEConnectionProvider, useBLEConnectionContext } from '../contexts/BLEConnectionContext';
+import { usePathname } from 'expo-router';
 
 interface BLEConnectionGuardProps {
     children: React.ReactNode;
 }
 
-export function BLEConnectionGuard({ children }: BLEConnectionGuardProps) {
-    const { isConnected, isScanning, error, connectToDevice, bluetoothState } = useBLEConnection();
+function Guard({ children }: { children: React.ReactNode }) {
+    const { isConnected, isScanning } = useBLEConnectionContext();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        if (!isConnected && !isScanning && pathname !== '/') {
+            router.replace('/');
+        }
+    }, [isConnected, isScanning, pathname]);
+
     const { theme } = useThemeContext();
     const colors = theme.colors;
-    const router = useRouter();
-    const navigation = useNavigation();
-    useEffect(() => {
-        if (navigation && !isConnected && !isScanning) {
-            // router.replace('/');
-        }
-    }, [isConnected, isScanning, bluetoothState]);
-
-    // useEffect(() => {
-    //     console.log('Evaluating Trigger connection');
-    //     if (bluetoothState === 'on' && !isConnected && !isScanning) {
-    //         console.log('Trigger connection');
-    //         connectToDevice();
-    //     }
-    // }, []);
-
-    // useEffect(() => {
-    //     if (bluetoothState === 'on' && !isConnected && !isScanning) {
-    //         console.log('Trigger connection');
-    //         connectToDevice();
-    //     }
-    // }, [bluetoothState, isConnected, isScanning]);
 
     if (!isConnected) {
         return (
@@ -68,6 +57,14 @@ export function BLEConnectionGuard({ children }: BLEConnectionGuardProps) {
 
     return (
         <>{children}</>
+    );
+}
+
+export default function BLEConnectionGuard({ children }: BLEConnectionGuardProps) {
+    return (
+        <BLEConnectionProvider>
+            <Guard>{children}</Guard>
+        </BLEConnectionProvider>
     );
 }
 
