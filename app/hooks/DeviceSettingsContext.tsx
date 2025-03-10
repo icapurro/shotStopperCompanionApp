@@ -11,11 +11,16 @@ interface DeviceSettingsContextType {
         dripDelay: number;
     };
     isLoading: boolean;
+    isConnected: boolean;
+    isScanning: boolean;
+    error: string | null;
+    connectToDevice: () => void;
     updateAutoTare: (value: boolean) => void;
     updateMomentary: (value: boolean) => void;
     updateReedSwitch: (value: boolean) => void;
     updateMinShotDuration: (value: number) => void;
     updateMaxShotDuration: (value: number) => void;
+    updateTimerValue: (value: number) => void;
     updateDripDelay: (value: number) => void;
     resetToDefaults: () => void;
 }
@@ -23,7 +28,7 @@ interface DeviceSettingsContextType {
 const DeviceSettingsContext = createContext<DeviceSettingsContextType | null>(null);
 
 export const DeviceSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const deviceSettings = useDeviceSettings(process.env.NODE_ENV === 'development');
+    const deviceSettings = useDeviceSettings(true);
 
     return (
         <DeviceSettingsContext.Provider value={deviceSettings}>

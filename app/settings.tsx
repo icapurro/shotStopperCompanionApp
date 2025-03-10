@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ActivityIndicator, SafeAreaView, TouchableOpacity, View, Pressable, StyleSheet, Animated, Text, ScrollView, Switch, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, usePathname, useRouter } from 'expo-router';
 import { MotiTransitionProp, View as MView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { useThemeContext } from './hooks/useThemeContext';
@@ -322,9 +322,20 @@ export default function Settings() {
         updateAutoTare,
         updateMomentary,
         updateReedSwitch,
+        isConnected, 
+        isScanning,
     } = useDeviceSettingsContext();
+    const router = useRouter();
+    const pathname = usePathname();
 
     const animatedLoadingValue = React.useState(new Animated.Value(0))[0];
+
+    useEffect(() => {
+        // Only redirect if we're not already on the index page
+        if (!isConnected && !isScanning && pathname !== '/') {
+            router.replace('/');
+        }
+    }, [isConnected, isScanning, pathname]);
 
     React.useEffect(() => {
         if (bleLoading) {
@@ -358,7 +369,7 @@ export default function Settings() {
                 ) : (
                     <Animated.View style={{ opacity: loadingOpacity }}>
                         <TouchableOpacity onPress={() => {
-                            router.navigate({ pathname: "/home" });
+                            router.navigate({ pathname: "/" });
                         }}>
                             <Feather name="x" size={24} style={{paddingLeft: 20, paddingTop: 10}} color={theme.colors.text} />
                         </TouchableOpacity>

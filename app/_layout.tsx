@@ -9,6 +9,8 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DeviceSettingsProvider } from './hooks/DeviceSettingsContext';
+import { BLEConnectionGuard } from './components/BLEConnectionGuard';
+import { AnimatePresence } from 'moti';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -39,12 +41,8 @@ const AppContent = () => {
           name="index"
           options={{
             headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="home"
-          options={{
-            headerShown: false,
+            gestureEnabled: false,
+            headerBackVisible: false,
           }}
         />
         <Stack.Screen
@@ -84,11 +82,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <DeviceSettingsProvider>
-          <SafeAreaProvider>
-            <AppContent />
-          </SafeAreaProvider>
-        </DeviceSettingsProvider>
+        <BLEConnectionGuard>
+          <DeviceSettingsProvider>
+            <SafeAreaProvider>
+              <AppContent />
+            </SafeAreaProvider>
+          </DeviceSettingsProvider>
+        </BLEConnectionGuard>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
