@@ -9,11 +9,29 @@ interface BLEConnectionState {
     error: string | null;
     connectToDevice: () => Promise<void>;
     bleLoading: boolean;
-    weightValue: number;
     updateAutoTare: (value: boolean) => Promise<void>;
     readAutoTare: () => Promise<boolean>;
+    autoTare: boolean;
     updateWeightValue: (value: number) => Promise<void>;
     readWeightValue: () => Promise<number>;
+    weightValue: number;
+    updateMomentary: (value: boolean) => Promise<void>;
+    readMomentary: () => Promise<boolean>;
+    momentary: boolean;
+    updateReedSwitch: (value: boolean) => Promise<void>;
+    readReedSwitch: () => Promise<boolean>;
+    reedSwitch: boolean;
+    updateMinShotDuration: (value: number) => Promise<void>;
+    readMinShotDuration: () => Promise<number>;
+    minShotDuration: number;
+    updateMaxShotDuration: (value: number) => Promise<void>;
+    readMaxShotDuration: () => Promise<number>;
+    maxShotDuration: number;
+    updateDripDelay: (value: number) => Promise<void>;
+    readDripDelay: () => Promise<number>;
+    dripDelay: number;
+    resetToDefaults: () => Promise<void>;
+    readAllSettings: () => Promise<void>;
 }
 
 const BLEConnectionContext = createContext<BLEConnectionState | null>(null);

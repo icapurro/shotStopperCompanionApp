@@ -14,13 +14,14 @@ interface BLEConnectionState {
 const config = {
     serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
-        AUTO_TARE: '00000000-0000-0000-0000-00000000ff12',
-        MOMENTARY: '00000000-0000-0000-0000-00000000ff13',
-        REED_SWITCH: '00000000-0000-0000-0000-00000000ff14',
-        MIN_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff11',
-        MAX_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff11',
-        DRIP_DELAY: '00000000-0000-0000-0000-00000000ff11',
         WEIGHT_VALUE: '00000000-0000-0000-0000-00000000ff11',
+        REED_SWITCH: '00000000-0000-0000-0000-00000000ff12',
+        MOMENTARY: '00000000-0000-0000-0000-00000000ff13',
+        AUTO_TARE: '00000000-0000-0000-0000-00000000ff14',
+        MIN_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff15',
+        MAX_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff16',
+        DRIP_DELAY: '00000000-0000-0000-0000-00000000ff17',
+
     }
 }
 
@@ -125,7 +126,7 @@ export const useBLEConnection = () => {
                 await BleManager.connect(deviceId.current);
                 await BleManager.requestConnectionPriority(deviceId.current, 1);
                 await BleManager.retrieveServices(deviceId.current);
-                await readWeightValue();
+                await readAllSettings();
                 setState({
                     isScanning: false,
                     isConnected: true,
@@ -187,7 +188,7 @@ export const useBLEConnection = () => {
                     await BleManager.connect(peripheral.id);
                     await BleManager.requestConnectionPriority(peripheral.id, 1);
                     await BleManager.retrieveServices(peripheral.id);
-                    await readWeightValue();
+                    await readAllSettings();
                 } catch (error) {
                     console.error('Connection error:', error);
                 } finally {
@@ -343,6 +344,28 @@ export const useBLEConnection = () => {
         }
     };
 
+    const readAllSettings = useCallback(async () => {
+        const [autoTare, weightValue, momentary, reedSwitch, minShotDuration, maxShotDuration, dripDelay] = await Promise.all([
+            readAutoTare(),
+            readWeightValue(),
+            readMomentary(),
+            readReedSwitch(),
+            readMinShotDuration(),
+            readMaxShotDuration(),
+            readDripDelay(),
+        ]);
+        setSettings(prev => ({
+            ...prev,
+            autoTare,
+            weightValue,
+            momentary,
+            reedSwitch,
+            minShotDuration,
+            maxShotDuration,
+            dripDelay,
+        }));
+    }, []);
+
     // Export your update functions
     const updateAutoTare = useCallback((value: boolean) => 
         updateSetting('autoTare', value, config.characteristics.AUTO_TARE), []);
@@ -358,10 +381,69 @@ export const useBLEConnection = () => {
     const readWeightValue = useCallback(async () => {
         console.log("reading weightValue", config.characteristics.WEIGHT_VALUE)
         const weightValue = await readCharacteristic(config.characteristics.WEIGHT_VALUE)
-        setSettings(prev => ({ ...prev, weightValue: Number(weightValue) }));
         console.log("weightValue", weightValue)
         return Number(weightValue)
     }, [config.characteristics.WEIGHT_VALUE]);
+
+    const updateMomentary = useCallback((value: boolean) => 
+        updateSetting('momentary', value, config.characteristics.MOMENTARY), []);
+
+    const readMomentary = useCallback(() => {
+        console.log("reading momentary", config.characteristics.MOMENTARY)
+        return readCharacteristic(config.characteristics.MOMENTARY)
+    }, [config.characteristics.MOMENTARY]);
+
+    const updateReedSwitch = useCallback((value: boolean) => 
+        updateSetting('reedSwitch', value, config.characteristics.REED_SWITCH), []);
+
+    const readReedSwitch = useCallback(() => {
+        console.log("reading reedSwitch", config.characteristics.REED_SWITCH)
+        return readCharacteristic(config.characteristics.REED_SWITCH)
+    }, [config.characteristics.REED_SWITCH]);
+
+    const updateMinShotDuration = useCallback((value: number) => 
+        updateSetting('minShotDuration', value, config.characteristics.MIN_SHOT_DURATION), []);
+
+    const readMinShotDuration = useCallback(() => {
+        console.log("reading minShotDuration", config.characteristics.MIN_SHOT_DURATION)
+        return readCharacteristic(config.characteristics.MIN_SHOT_DURATION)
+    }, [config.characteristics.MIN_SHOT_DURATION]);
+
+    const updateMaxShotDuration = useCallback((value: number) => 
+        updateSetting('maxShotDuration', value, config.characteristics.MAX_SHOT_DURATION), []);
+
+    const readMaxShotDuration = useCallback(() => {
+        console.log("reading maxShotDuration", config.characteristics.MAX_SHOT_DURATION)
+        return readCharacteristic(config.characteristics.MAX_SHOT_DURATION)
+    }, [config.characteristics.MAX_SHOT_DURATION]);
+
+    const updateDripDelay = useCallback((value: number) => 
+        updateSetting('dripDelay', value, config.characteristics.DRIP_DELAY), []);
+
+    const readDripDelay = useCallback(() => {
+        console.log("reading dripDelay", config.characteristics.DRIP_DELAY)
+        return readCharacteristic(config.characteristics.DRIP_DELAY)
+    }, [config.characteristics.DRIP_DELAY]);
+
+    const resetToDefaults = useCallback(async () => {
+        await writeCharacteristic(config.characteristics.WEIGHT_VALUE, 36);
+        await writeCharacteristic(config.characteristics.AUTO_TARE, true);
+        await writeCharacteristic(config.characteristics.MOMENTARY, false);
+        await writeCharacteristic(config.characteristics.REED_SWITCH, false);
+        await writeCharacteristic(config.characteristics.MIN_SHOT_DURATION, 3);
+        await writeCharacteristic(config.characteristics.MAX_SHOT_DURATION, 50);
+        await writeCharacteristic(config.characteristics.DRIP_DELAY, 3);
+        setSettings(prev => ({
+            ...prev,
+            autoTare: true,
+            weightValue: 36,
+            momentary: false,
+            reedSwitch: false,
+            minShotDuration: 3,
+            maxShotDuration: 50,
+            dripDelay: 3,
+        }));
+    }, []);
 
     return {
         ...state,
@@ -372,5 +454,17 @@ export const useBLEConnection = () => {
         readAutoTare, 
         updateWeightValue,
         readWeightValue,
+        updateMomentary,
+        readMomentary,
+        updateReedSwitch,
+        readReedSwitch,
+        updateMinShotDuration,
+        readMinShotDuration,
+        updateMaxShotDuration,
+        readMaxShotDuration,
+        updateDripDelay,
+        readDripDelay,
+        readAllSettings,
+        resetToDefaults,
     };
 }; 

@@ -8,7 +8,6 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DeviceSettingsProvider } from './hooks/DeviceSettingsContext';
 import BLEConnectionGuard from './components/BLEConnectionGuard';
 import { initialize } from '@microsoft/react-native-clarity';
 
@@ -86,9 +85,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <BLEConnectionGuard>
-          <DeviceSettingsProvider>
-            <AppContent />
-          </DeviceSettingsProvider>
+          <AppContent />
         </BLEConnectionGuard>
       </ThemeProvider>
     </GestureHandlerRootView>

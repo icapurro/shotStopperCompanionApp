@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MyDarkTheme, MyLightTheme } from '@/constants/Colors';
 import { Slider } from 'react-native-awesome-slider';
 import { useSharedValue } from 'react-native-reanimated';
-import { useDeviceSettingsContext } from './hooks/DeviceSettingsContext';
+import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
 import useDebounce from './hooks/useDebounce';
 import { useState, useEffect } from 'react';
 
@@ -256,19 +256,22 @@ const SliderItem: React.FC<SliderItemProps> = ({
 };
 
 const TimingSettings: React.FC = () => {
+
     const {
-        settings,
         updateMinShotDuration,
+        minShotDuration,
         updateMaxShotDuration,
+        maxShotDuration,
         updateDripDelay,
-    } = useDeviceSettingsContext();
+        dripDelay,
+    } = useBLEConnectionContext();  
     
     return (
         <SettingsGroup>
             <SliderItem
                 title="Minimum Shot Duration"
                 description='Useful for flushing the group. This ensure that the system will ignore "shots" that last less than this duration'
-                value={settings.minShotDuration}
+                value={minShotDuration}
                 onValueChange={updateMinShotDuration}
                 min={1}
                 max={15}
@@ -276,7 +279,7 @@ const TimingSettings: React.FC = () => {
             <SliderItem
                 title="Maximum Shot Duration"
                 description="Primarily useful for latching switches, since user looses control of the paddle once the system latches."
-                value={settings.maxShotDuration}
+                value={maxShotDuration}
                 onValueChange={updateMaxShotDuration}
                 min={30}
                 max={120}
@@ -284,7 +287,7 @@ const TimingSettings: React.FC = () => {
             <SliderItem
                 title="Drip delay"
                 description="Time after the shot ended to measure the final weight"
-                value={settings.dripDelay}
+                value={dripDelay}
                 onValueChange={updateDripDelay}
                 min={1}
                 max={10}
@@ -296,7 +299,7 @@ const TimingSettings: React.FC = () => {
 
 const ResetButton: React.FC = () => {
     const { theme } = useThemeContext();
-    const { resetToDefaults, isLoading } = useDeviceSettingsContext();
+    const { resetToDefaults, isLoading } = useBLEConnectionContext();
     
     return (
         <View style={styles.resetButtonContainer}>
@@ -314,15 +317,18 @@ const ResetButton: React.FC = () => {
 export default function Settings() {
     const { theme } = useThemeContext();
     const insets = useSafeAreaInsets();
+
     const {
-        settings,
-        isLoading: bleLoading,
-        updateAutoTare,
         updateMomentary,
         updateReedSwitch,
-        isConnected, 
-        isScanning,
-    } = useDeviceSettingsContext();
+        updateAutoTare,
+        momentary,
+        reedSwitch,
+        autoTare,
+        isLoading: bleLoading,
+        isConnected,
+        isScanning
+    } = useBLEConnectionContext();  
     const router = useRouter();
     const pathname = usePathname();
 
@@ -380,20 +386,20 @@ export default function Settings() {
                     <SettingsItem
                         title="Auto-tare"
                         description="Automatically tare when shot is started and 3 seconds after a latching switch brew (as defined by Momentary)"
-                        isActive={settings.autoTare}
-                        onToggle={() => updateAutoTare(!settings.autoTare)}
+                        isActive={autoTare}
+                        onToggle={() => updateAutoTare(!autoTare)}
                     />
                     <SettingsItem
                         title="Momentary"
                         description="Defines the brew switch style. Turn ON for momentary switches such as GS3 AV, Silvia Pro and OFF for latching switches such as Linea Mini/Micra"
-                        isActive={settings.momentary}
-                        onToggle={() => updateMomentary(!settings.momentary)}
+                        isActive={momentary}
+                        onToggle={() => updateMomentary(!momentary)}
                     />
                     <SettingsItem
                         title="Reed Switch"
                         description="Set to true if the brew state is being determined by a reed switch attached to the brew solenoid"
-                        isActive={settings.reedSwitch}
-                        onToggle={() => updateReedSwitch(!settings.reedSwitch)}
+                        isActive={reedSwitch}
+                        onToggle={() => updateReedSwitch(!reedSwitch)}
                         showDivider={false}
                     />
                 </SettingsGroup>
