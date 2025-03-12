@@ -11,6 +11,11 @@ interface BLEConnectionState {
     bluetoothState: BleState;
 }
 
+export enum ScaleStatus {
+    DISCONNECTED = 0,
+    CONNECTED = 1
+}
+
 const config = {
     serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
@@ -21,7 +26,8 @@ const config = {
         MIN_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff15',
         MAX_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff16',
         DRIP_DELAY: '00000000-0000-0000-0000-00000000ff17',
-
+        FIRMWARE_VERSION: '00000000-0000-0000-0000-00000000ff18',
+        SCALE_STATUS: '00000000-0000-0000-0000-00000000ff19',
     }
 }
 
@@ -33,6 +39,8 @@ interface DeviceSettings {
     maxShotDuration: number;
     dripDelay: number;
     weightValue: number;
+    scaleStatus: ScaleStatus;
+    firmwareVersion: number;
 }
 
 const requestBlePermissions = async (): Promise<boolean> => {
@@ -80,6 +88,8 @@ export const useBLEConnection = () => {
         maxShotDuration: 0,
         dripDelay: 0,
         weightValue: 36,
+        scaleStatus: ScaleStatus.DISCONNECTED,
+        firmwareVersion: 0,
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -240,6 +250,11 @@ export const useBLEConnection = () => {
             setState(prev => ({ ...prev, isScanning: false }));
         });
 
+        const onScaleStatusListener = BleManager.onDidUpdateValueForCharacteristic(async (args: any) => {
+            console.log("scaleStatusListener", args)
+            setSettings(prev => ({ ...prev, scaleStatus: args.value[0] }));
+        });
+
         if (!state.isConnected || state.error) {
             console.log("connecting to device on mount")
             connectToDevice();
@@ -251,6 +266,7 @@ export const useBLEConnection = () => {
             onDisconnectListener.remove();
             onStopScanListener.remove();
             onDidUpdateStateListener.remove();
+            onScaleStatusListener.remove();
         };
     }, [deviceId, state.isConnected, state.error]);
 
@@ -344,8 +360,15 @@ export const useBLEConnection = () => {
         }
     };
 
+    const listenForScaleStatus = async () => {
+        if (!deviceId.current) {
+            throw new Error('Device ID is not set');
+        }
+        await BleManager.startNotification(deviceId.current, config.serviceUUID, config.characteristics.SCALE_STATUS);
+    }
+
     const readAllSettings = useCallback(async () => {
-        const [autoTare, weightValue, momentary, reedSwitch, minShotDuration, maxShotDuration, dripDelay] = await Promise.all([
+        const [autoTare, weightValue, momentary, reedSwitch, minShotDuration, maxShotDuration, dripDelay, firmwareVersion] = await Promise.all([
             readAutoTare(),
             readWeightValue(),
             readMomentary(),
@@ -353,7 +376,9 @@ export const useBLEConnection = () => {
             readMinShotDuration(),
             readMaxShotDuration(),
             readDripDelay(),
+            readFirmwareVersion(),
         ]);
+        await listenForScaleStatus();
         setSettings(prev => ({
             ...prev,
             autoTare,
@@ -363,6 +388,7 @@ export const useBLEConnection = () => {
             minShotDuration,
             maxShotDuration,
             dripDelay,
+            firmwareVersion,
         }));
     }, []);
 
@@ -424,6 +450,11 @@ export const useBLEConnection = () => {
         console.log("reading dripDelay", config.characteristics.DRIP_DELAY)
         return readCharacteristic(config.characteristics.DRIP_DELAY)
     }, [config.characteristics.DRIP_DELAY]);
+
+    const readFirmwareVersion = useCallback(() => {
+        console.log("reading firmwareVersion", config.characteristics.FIRMWARE_VERSION)
+        return readCharacteristic(config.characteristics.FIRMWARE_VERSION)
+    }, [config.characteristics.FIRMWARE_VERSION]);
 
     const resetToDefaults = useCallback(async () => {
         await writeCharacteristic(config.characteristics.WEIGHT_VALUE, 36);

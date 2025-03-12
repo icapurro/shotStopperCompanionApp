@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { useBLEConnection } from '../hooks/useBLEConnection';
+import { ScaleStatus, useBLEConnection } from '../hooks/useBLEConnection';
 
 interface BLEConnectionState {
     deviceId: string | null;
@@ -32,6 +32,8 @@ interface BLEConnectionState {
     dripDelay: number;
     resetToDefaults: () => Promise<void>;
     readAllSettings: () => Promise<void>;
+    scaleStatus: ScaleStatus;
+    firmwareVersion: number;
 }
 
 const BLEConnectionContext = createContext<BLEConnectionState | null>(null);

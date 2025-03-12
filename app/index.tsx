@@ -16,6 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation, usePathname, useRouter } from "expo-router";
 import { useThemeContext } from "./hooks/useThemeContext";
 import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
+import { ScaleStatus } from "./hooks/useBLEConnection";
 const { width, height } = Dimensions.get("screen");
 const color = {
   black: "#111110",
@@ -45,8 +46,8 @@ export default function App() {
     isConnected, 
     isLoading: bleLoading,
     weightValue: goalWeight,
-    updateAutoTare,
     updateWeightValue,
+    scaleStatus,
   } = useBLEConnectionContext();
 
   const scrollX = React.useRef(new Animated.Value((goalWeight - start) * ITEM_SIZE)).current;
@@ -371,8 +372,10 @@ export default function App() {
       <Animated.View style={[styles.bottomBar, styles.left, { opacity } ]}>
         <View >
           <View style={styles.scaleStatus}>
-            <Feather name="wifi" style={{ padding: 1, paddingRight: 10 }} size={16} color={colors.text}/>
-            <Animated.Text style={[styles.smallText, {color: colors.text}]}>Scale connected</Animated.Text>
+            <Feather name={scaleStatus === ScaleStatus.CONNECTED ? "wifi" : "wifi-off"} style={{ padding: 1, paddingRight: 10 }} size={16} color={colors.text}/>
+            <Animated.Text style={[styles.smallText, {color: colors.text}]}>
+                {scaleStatus === ScaleStatus.CONNECTED ? "Scale connected" : "Looking for scale..."}
+            </Animated.Text>
           </View>
     </View>
       </Animated.View>
