@@ -19,15 +19,15 @@ export enum ScaleStatus {
 const config = {
     serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
-        WEIGHT_VALUE: '00000000-0000-0000-0000-00000000ff11',
-        REED_SWITCH: '00000000-0000-0000-0000-00000000ff12',
-        MOMENTARY: '00000000-0000-0000-0000-00000000ff13',
-        AUTO_TARE: '00000000-0000-0000-0000-00000000ff14',
-        MIN_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff15',
-        MAX_SHOT_DURATION: '00000000-0000-0000-0000-00000000ff16',
-        DRIP_DELAY: '00000000-0000-0000-0000-00000000ff17',
-        FIRMWARE_VERSION: '00000000-0000-0000-0000-00000000ff18',
-        SCALE_STATUS: '00000000-0000-0000-0000-00000000ff19',
+        WEIGHT_VALUE: '00000000-0000-0000-0000-00000000FF11',
+        REED_SWITCH: '00000000-0000-0000-0000-00000000FF12',
+        MOMENTARY: '00000000-0000-0000-0000-00000000FF13',
+        AUTO_TARE: '00000000-0000-0000-0000-00000000FF14',
+        MIN_SHOT_DURATION: '00000000-0000-0000-0000-00000000FF15',
+        MAX_SHOT_DURATION: '00000000-0000-0000-0000-00000000FF16',
+        DRIP_DELAY: '00000000-0000-0000-0000-00000000FF17',
+        FIRMWARE_VERSION: '00000000-0000-0000-0000-00000000FF18',
+        SCALE_STATUS: '00000000-0000-0000-0000-00000000FF19',
     }
 }
 
@@ -60,7 +60,6 @@ const requestBlePermissions = async (): Promise<boolean> => {
             // For older Android versions, request legacy permissions
             const results = await requestMultiple([
                 PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-                'android.permission.BLUETOOTH',
             ]);
             return Object.values(results).every(result => result === RESULTS.GRANTED);
         }
@@ -145,7 +144,7 @@ export const useBLEConnection = () => {
                 });
                 return;
             } else {
-                await BleManager.scan([], 10, false, {
+                await BleManager.scan([config.serviceUUID], 10, false, {
                     matchMode: BleScanMatchMode.Aggressive,
                     scanMode: BleScanMode.LowLatency,
                     callbackType: BleScanCallbackType.AllMatches,
@@ -180,36 +179,28 @@ export const useBLEConnection = () => {
     };
 
     useEffect(() => {
-        // Initialize BLE
-        BleManager.start({ showAlert: false }).then(() => {
-            console.log("BLE Module initialized");
-        });
 
         const onDiscoverListener = BleManager.onDiscoverPeripheral(async (peripheral: Peripheral) => {
-            const deviceName = peripheral.name || 
-                             peripheral.advertising?.localName || 
-                             peripheral.advertising?.manufacturerData?.toString();
-
-            console.log("deviceName", deviceName)
-
-            if (deviceName?.toLowerCase().includes('shot')) {
-                try {
-                    deviceId.current = peripheral.id;
-                    await BleManager.connect(peripheral.id);
+            try {
+                deviceId.current = peripheral.id;
+                await BleManager.connect(peripheral.id);
+                if (Platform.OS === 'android') {
                     await BleManager.requestConnectionPriority(peripheral.id, 1);
-                    await BleManager.retrieveServices(peripheral.id);
-                    await readAllSettings();
-                } catch (error) {
-                    console.error('Connection error:', error);
-                } finally {
-                    await BleManager.stopScan();
-                    setState(prev => ({
-                        ...prev,
-                        isConnected: true,
-                        isScanning: false,
-                        error: null
-                    }));
                 }
+                await BleManager.retrieveServices(peripheral.id);
+                const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
+                console.log("connectedPeripherals", connectedPeripherals)
+                await readAllSettings();
+            } catch (error) {
+                console.error('Connection error:', error);
+            } finally {
+                await BleManager.stopScan();
+                setState(prev => ({
+                    ...prev,
+                    isConnected: true,
+                    isScanning: false,
+                    error: null
+                }));
             }
         });
 
@@ -251,15 +242,15 @@ export const useBLEConnection = () => {
         });
 
         const onScaleStatusListener = BleManager.onDidUpdateValueForCharacteristic(async (args: any) => {
-            console.log("scaleStatusListener", args)
-            setSettings(prev => ({ ...prev, scaleStatus: args.value[0] }));
+            if (args.characteristic === config.characteristics.SCALE_STATUS) {
+                console.log("scaleStatusListener", args)
+                setSettings(prev => ({ ...prev, scaleStatus: args.value[0] }));
+            }
         });
 
         if (!state.isConnected || state.error) {
-            console.log("connecting to device on mount")
             connectToDevice();
         }
-
         return () => {
             onDiscoverListener.remove();
             onConnectListener.remove();
@@ -347,10 +338,6 @@ export const useBLEConnection = () => {
         try {
             setIsLoading(true);
             await writeCharacteristic(characteristic, value);
-            await AsyncStorage.setItem('@device_settings', JSON.stringify({
-                ...settings,
-                [key]: value
-            }));
         } catch (error) {
             setSettings(prev => ({ ...prev, [key]: previousValue }));
             await disconnectFromDevice();
@@ -401,8 +388,9 @@ export const useBLEConnection = () => {
         return readCharacteristic(config.characteristics.AUTO_TARE)
     }, [config.characteristics.AUTO_TARE]);
 
-    const updateWeightValue = useCallback((value: number) => 
-        updateSetting('weightValue', value, config.characteristics.WEIGHT_VALUE), []);
+    const updateWeightValue = useCallback((value: number) => {
+        return updateSetting('weightValue', value, config.characteristics.WEIGHT_VALUE)
+    }, []);
 
     const readWeightValue = useCallback(async () => {
         console.log("reading weightValue", config.characteristics.WEIGHT_VALUE)

@@ -12,7 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.icapurro.shotStopperCompanion",
       "infoPlist": {
-        "Bluetooth": "Required to connect to the shotStopper device."
+        "NSBluetoothAlwaysUsageDescription": "Required to connect to the shotStopper device.",
+        "NSBluetoothPeripheralUsageDescription": "Required to connect to the shotStopper device.",
+        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral"]
       }
     },
     "android": {
@@ -62,8 +64,10 @@
         "react-native-permissions",
         {
           "iosPermissions": [
-            "Camera",
-            "Microphone"
+            "Bluetooth"
+          ],
+          "podPermissions": [
+            "Bluetooth"
           ]
         }
       ]

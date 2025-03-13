@@ -15,10 +15,9 @@ install! 'cocoapods',
   :deterministic_uuids => false
 
 prepare_react_native_project!
-# @generated begin setup - expo prebuild (DO NOT MODIFY) sync-749886d0c6e24752131144313e1bbafbc430f931
+# @generated begin setup - expo prebuild (DO NOT MODIFY) sync-f747db95fc375087fd7dd7fba4522e3269d70b8a
 setup_permissions([
-  'Camera',
-  'Microphone',
+  'Bluetooth',
 ])
 # @generated end setup
 

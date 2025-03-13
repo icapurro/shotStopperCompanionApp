@@ -10,12 +10,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BLEConnectionGuard from './components/BLEConnectionGuard';
 import { initialize } from '@microsoft/react-native-clarity';
+import BleManager from 'react-native-ble-manager';
 
-// Initialize Clarity
 initialize("qm8srg6dza");
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+BleManager.start({ showAlert: false }).then(() => {
+  console.log("BLE Module initialized");
+})
 
 const AppContent = () => {
   const { theme, isDarkMode } = useThemeContext();
