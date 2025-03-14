@@ -19,7 +19,7 @@ export enum ScaleStatus {
 export const scanDuration = 5;
 
 const config = {
-    serviceUUID: '00000000-0000-0000-0000-0000000000fe',
+    serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
         WEIGHT_VALUE: '00000000-0000-0000-0000-00000000FF11',
         REED_SWITCH: '00000000-0000-0000-0000-00000000FF12',

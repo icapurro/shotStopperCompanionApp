@@ -345,13 +345,13 @@ export default function App() {
         {bleLoading ? (
           <ActivityIndicator size="small" color={colors.text} />
         ) : (
-          <Animated.View style={{ opacity: loadingOpacity }}>
-            <TouchableOpacity onPress={() => {
-                console.log("press")
-                router.navigate({ pathname: "/settings" });
-              }}>
-              <Feather name="sliders" style={{paddingTop: 10}} size={24} color={colors.text}/>
-            </TouchableOpacity>
+            <Animated.View style={{ opacity: loadingOpacity }}>
+              <TouchableOpacity onPress={() => {
+                  console.log("press")
+                  router.navigate({ pathname: "/settings" });
+                }}>
+                <Feather name="sliders" style={{paddingTop: 10}} size={24} color={colors.text}/>
+              </TouchableOpacity>
           </Animated.View>
         )}
         </View>

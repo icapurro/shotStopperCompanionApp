@@ -376,7 +376,7 @@ export default function Settings() {
                         <TouchableOpacity onPress={() => {
                             router.navigate({ pathname: "/" });
                         }}>
-                            <Feather name="x" size={24} style={{paddingLeft: 20, paddingTop: 10}} color={theme.colors.text} />
+                            <Feather name="x" size={24} style={{paddingLeft: 30, paddingTop: 30, paddingRight: 40}} color={theme.colors.text} />
                         </TouchableOpacity>
                     </Animated.View>
                 )}
@@ -431,8 +431,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         top: 0,
-        margin: 20,
-        paddingRight: 20,
         color: 'white',
     },
     itemContainer: {
@@ -466,7 +464,8 @@ const styles = StyleSheet.create({
     titleText: {
         fontSize: 32,
         fontFamily: "InstrumentSherif",
-        paddingLeft: 0,
+        paddingLeft: 20,
+        paddingTop: 20,
     },
     themeBoxesContainer: {
         flexDirection: 'row',
