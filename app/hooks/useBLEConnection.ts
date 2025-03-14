@@ -16,6 +16,8 @@ export enum ScaleStatus {
     CONNECTED = 1
 }
 
+export const scanDuration = 5;
+
 const config = {
     serviceUUID: '00000000-0000-0000-0000-0000000000fe',
     characteristics: {
@@ -133,7 +135,9 @@ export const useBLEConnection = () => {
             if (connectedPeripherals[0]?.advertising?.localName === 'shotStopper') {
                 deviceId.current = connectedPeripherals[0].id;                    
                 await BleManager.connect(deviceId.current);
-                await BleManager.requestConnectionPriority(deviceId.current, 1);
+                if (Platform.OS === 'android') {
+                    await BleManager.requestConnectionPriority(deviceId.current, 1);
+                }
                 await BleManager.retrieveServices(deviceId.current);
                 await readAllSettings();
                 setState({
@@ -144,7 +148,7 @@ export const useBLEConnection = () => {
                 });
                 return;
             } else {
-                await BleManager.scan([config.serviceUUID], 10, false, {
+                await BleManager.scan([config.serviceUUID], scanDuration, false, {
                     matchMode: BleScanMatchMode.Aggressive,
                     scanMode: BleScanMode.LowLatency,
                     callbackType: BleScanCallbackType.AllMatches,
@@ -195,13 +199,13 @@ export const useBLEConnection = () => {
             } catch (error) {
                 console.error('Connection error:', error);
             } finally {
-                await BleManager.stopScan();
                 setState(prev => ({
                     ...prev,
                     isConnected: true,
                     isScanning: false,
                     error: null
                 }));
+                await BleManager.stopScan();
             }
         });
 
@@ -224,7 +228,7 @@ export const useBLEConnection = () => {
 
         const onConnectListener = BleManager.onConnectPeripheral(async (args: any) => {
             console.log('Connected to:', args);
-            BleManager.stopScan();
+            // BleManager.stopScan();
             deviceId.current = args.peripheral;
         });
 
@@ -266,6 +270,7 @@ export const useBLEConnection = () => {
         const appStateSubscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
             console.log("appStateSubscription", nextAppState)
             if (nextAppState === 'active') {
+                isConnecting.current = false;
                 await connectToDevice();
             } else if (nextAppState === 'background' || nextAppState === 'inactive') {
                 await disconnectFromDevice();
@@ -480,6 +485,7 @@ export const useBLEConnection = () => {
         ...state,
         ...settings,
         isLoading,
+        isConnecting,
         connectToDevice,
         updateAutoTare,
         readAutoTare, 
@@ -497,5 +503,6 @@ export const useBLEConnection = () => {
         readDripDelay,
         readAllSettings,
         resetToDefaults,
+        deviceId,
     };
 }; 

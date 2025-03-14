@@ -1,11 +1,14 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, RefObject } from 'react';
 import { ScaleStatus, useBLEConnection } from '../hooks/useBLEConnection';
+import { BleState } from 'react-native-ble-manager';
 
 interface BLEConnectionState {
-    deviceId: string | null;
+    deviceId: RefObject<string | null>;
+    isConnecting: RefObject<boolean>;
     isConnected: boolean;
     isScanning: boolean;
     isLoading: boolean;
+    bluetoothState: BleState;
     error: string | null;
     connectToDevice: () => Promise<void>;
     bleLoading: boolean;
