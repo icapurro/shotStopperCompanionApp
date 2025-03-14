@@ -364,10 +364,16 @@ export const useBLEConnection = () => {
     }
 
     const readAllSettings = useCallback(async () => {
-        const [weightValue, firmwareVersion] = await Promise.all([
-            readWeightValue(),
-            readFirmwareVersion(),
-        ]);
+        var firmwareVersion = 0;
+        try {
+            firmwareVersion = await readFirmwareVersion();
+        } catch (error) {
+            setSettings(prev => ({
+                ...prev,
+                firmwareVersion: 0,
+            }));
+        }
+        const weightValue = await readWeightValue();
         setSettings(prev => ({
             ...prev,
             weightValue,
@@ -458,7 +464,7 @@ export const useBLEConnection = () => {
 
     const readFirmwareVersion = useCallback(() => {
         console.log("reading firmwareVersion", config.characteristics.FIRMWARE_VERSION)
-        return readCharacteristic(config.characteristics.FIRMWARE_VERSION)
+        return readCharacteristic(config.characteristics.FIRMWARE_VERSION, 1)
     }, [config.characteristics.FIRMWARE_VERSION]);
 
     const resetToDefaults = useCallback(async () => {
