@@ -327,7 +327,8 @@ export default function Settings() {
         autoTare,
         isLoading: bleLoading,
         isConnected,
-        isScanning
+        isScanning,
+        firmwareVersion
     } = useBLEConnectionContext();  
     const router = useRouter();
     const pathname = usePathname();
@@ -382,29 +383,34 @@ export default function Settings() {
             </View>
             <ScrollView style={styles.listContainer}>
                 <ThemeSelector />
-                <SettingsGroup>
-                    <SettingsItem
-                        title="Auto-tare"
-                        description="Automatically tare when shot is started and 3 seconds after a latching switch brew (as defined by Momentary)"
-                        isActive={autoTare}
-                        onToggle={() => updateAutoTare(!autoTare)}
-                    />
-                    <SettingsItem
-                        title="Momentary"
-                        description="Defines the brew switch style. Turn ON for momentary switches such as GS3 AV, Silvia Pro and OFF for latching switches such as Linea Mini/Micra"
-                        isActive={momentary}
-                        onToggle={() => updateMomentary(!momentary)}
-                    />
-                    <SettingsItem
-                        title="Reed Switch"
-                        description="Set to true if the brew state is being determined by a reed switch attached to the brew solenoid"
-                        isActive={reedSwitch}
-                        onToggle={() => updateReedSwitch(!reedSwitch)}
-                        showDivider={false}
-                    />
-                </SettingsGroup>
-                <TimingSettings />
-                <ResetButton />
+                {firmwareVersion > 0 && (
+                    <View>
+                        <SettingsGroup>
+                            <SettingsItem
+                                title="Auto-tare"
+                                description="Automatically tare when shot is started and 3 seconds after a latching switch brew (as defined by Momentary)"
+                                isActive={autoTare}
+                                onToggle={() => updateAutoTare(!autoTare)}
+                            />
+                            <SettingsItem
+                                title="Momentary"
+                                description="Defines the brew switch style. Turn ON for momentary switches such as GS3 AV, Silvia Pro and OFF for latching switches such as Linea Mini/Micra"
+                                isActive={momentary}
+                                onToggle={() => updateMomentary(!momentary)}
+                            />
+                            <SettingsItem
+                                title="Reed Switch"
+                                description="Set to true if the brew state is being determined by a reed switch attached to the brew solenoid"
+                                isActive={reedSwitch}
+                                onToggle={() => updateReedSwitch(!reedSwitch)}
+                                showDivider={false}
+                            />
+                        </SettingsGroup>
+                        <TimingSettings />
+                        <ResetButton />
+                    </View>
+                )}
+                <Text style={[styles.paragraph, {color: theme.colors.text, textAlign: 'center', marginBottom: 20}]}>Firmware version: {firmwareVersion}</Text>
             </ScrollView>
         </SafeAreaView>
     );

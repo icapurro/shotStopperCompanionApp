@@ -17,7 +17,7 @@ export enum ScaleStatus {
 }
 
 const config = {
-    serviceUUID: '00000000-0000-0000-0000-000000000ffe',
+    serviceUUID: '00000000-0000-0000-0000-0000000000fe',
     characteristics: {
         WEIGHT_VALUE: '00000000-0000-0000-0000-00000000FF11',
         REED_SWITCH: '00000000-0000-0000-0000-00000000FF12',
@@ -181,6 +181,7 @@ export const useBLEConnection = () => {
     useEffect(() => {
 
         const onDiscoverListener = BleManager.onDiscoverPeripheral(async (peripheral: Peripheral) => {
+            console.log("onDiscoverListener", peripheral)
             try {
                 deviceId.current = peripheral.id;
                 await BleManager.connect(peripheral.id);
@@ -333,6 +334,9 @@ export const useBLEConnection = () => {
         characteristic: string
     ): Promise<void> => {
         const previousValue = settings[key];
+        if (value === previousValue) {
+            return;
+        }
         setSettings(prev => ({ ...prev, [key]: value }));
         
         try {
@@ -355,28 +359,36 @@ export const useBLEConnection = () => {
     }
 
     const readAllSettings = useCallback(async () => {
-        const [autoTare, weightValue, momentary, reedSwitch, minShotDuration, maxShotDuration, dripDelay, firmwareVersion] = await Promise.all([
-            readAutoTare(),
+        const [weightValue, firmwareVersion] = await Promise.all([
             readWeightValue(),
-            readMomentary(),
-            readReedSwitch(),
-            readMinShotDuration(),
-            readMaxShotDuration(),
-            readDripDelay(),
             readFirmwareVersion(),
         ]);
-        await listenForScaleStatus();
         setSettings(prev => ({
             ...prev,
-            autoTare,
             weightValue,
-            momentary,
-            reedSwitch,
-            minShotDuration,
-            maxShotDuration,
-            dripDelay,
             firmwareVersion,
         }));
+
+        if (firmwareVersion > 0) {
+            const [autoTare, momentary, reedSwitch, minShotDuration, maxShotDuration, dripDelay] = await Promise.all([
+                readAutoTare(),
+                readMomentary(),
+                readReedSwitch(),
+                readMinShotDuration(),
+                readMaxShotDuration(),
+                readDripDelay(),
+            ]);
+            await listenForScaleStatus();
+            setSettings(prev => ({
+                ...prev,
+                autoTare,
+                momentary,
+                reedSwitch,
+                minShotDuration,
+                maxShotDuration,
+                dripDelay,
+            }));
+        }
     }, []);
 
     // Export your update functions

@@ -28,8 +28,8 @@ const ITEM_SIZE = width * 0.38;
 const ITEM_SPACING = (width - ITEM_SIZE) / 2;
 
 export default function App() {
-    const { theme } = useThemeContext();
-    const colors = theme.colors;
+  const { theme } = useThemeContext();
+  const colors = theme.colors;
   const router = useRouter();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
   const animatedStopValue = React.useRef(new Animated.Value(0)).current;
@@ -40,31 +40,18 @@ export default function App() {
   const lastVibrationIndex = React.useRef(0);
   const flatList = React.createRef();
   const navigation = useNavigation();
-  const pathname = usePathname();
+  
   const { 
-    deviceId, 
     isConnected, 
     isLoading: bleLoading,
     weightValue: goalWeight,
     updateWeightValue,
     scaleStatus,
+    firmwareVersion
   } = useBLEConnectionContext();
 
   const scrollX = React.useRef(new Animated.Value((goalWeight - start) * ITEM_SIZE)).current;
-  
-  const peripheralConfig = React.useMemo(() => ({
-    deviceId: deviceId!,
-    serviceUUID: '00000000-0000-0000-0000-000000000ffe',
-    characteristics: {
-      WEIGHT_VALUE: '00000000-0000-0000-0000-00000000ff11',
-      REEDSWITCH: '00000000-0000-0000-0000-00000000ff12',
-      MOMENTARY: '00000000-0000-0000-0000-00000000ff13',
-      AUTOTARE: '00000000-0000-0000-0000-00000000ff14',
-      MIN_SHOT_DURATION_S_ADDR: '00000000-0000-0000-0000-00000000ff15',
-      MAX_SHOT_DURATION_S_ADDR: '00000000-0000-0000-0000-00000000ff16',
-      DRIP_DELAY_S_ADDR: '00000000-0000-0000-0000-00000000ff17',
-    }
-  }), [deviceId]);
+
 
   React.useEffect(() => {
     navigation.setOptions({
@@ -359,16 +346,17 @@ export default function App() {
           <ActivityIndicator size="small" color={colors.text} />
         ) : (
           <Animated.View style={{ opacity: loadingOpacity }}>
-              <TouchableOpacity onPress={() => {
-                  console.log("press")
-                  router.navigate({ pathname: "/settings" });
-                }}>
-                <Feather name="sliders" style={{paddingTop: 10}} size={24} color={colors.text}/>
-              </TouchableOpacity>
+            <TouchableOpacity onPress={() => {
+                console.log("press")
+                router.navigate({ pathname: "/settings" });
+              }}>
+              <Feather name="sliders" style={{paddingTop: 10}} size={24} color={colors.text}/>
+            </TouchableOpacity>
           </Animated.View>
         )}
         </View>
       </Animated.View>
+      { firmwareVersion > 0 && (
       <Animated.View style={[styles.bottomBar, styles.left, { opacity } ]}>
         <View >
           <View style={styles.scaleStatus}>
@@ -377,8 +365,9 @@ export default function App() {
                 {scaleStatus === ScaleStatus.CONNECTED ? "Scale connected" : "Looking for scale..."}
             </Animated.Text>
           </View>
-    </View>
+        </View>
       </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
