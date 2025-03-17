@@ -18,8 +18,9 @@ export enum ScaleStatus {
 
 export const scanDuration = 5;
 
+const serviceUUIDs = ['00000000-0000-0000-0000-000000000ffe', '00000000-0000-0000-0000-000000002a98'];
+
 const config = {
-    serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
         WEIGHT_VALUE: '00000000-0000-0000-0000-00000000FF11',
         REED_SWITCH: '00000000-0000-0000-0000-00000000FF12',
@@ -73,6 +74,7 @@ export const useBLEConnection = () => {
 
     const isConnecting = useRef(false);
     const deviceId = useRef<string | null>(null);
+    const serviceUUID = useRef<string | null>('');
 
     const [state, setState] = useState<BLEConnectionState>({
         isConnected: false,
@@ -134,6 +136,7 @@ export const useBLEConnection = () => {
             const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
             if (connectedPeripherals[0]?.advertising?.localName === 'shotStopper') {
                 deviceId.current = connectedPeripherals[0].id;                    
+                serviceUUID.current = connectedPeripherals[0].advertising?.serviceUUIDs?.[0] ?? null;
                 await BleManager.connect(deviceId.current);
                 if (Platform.OS === 'android') {
                     await BleManager.requestConnectionPriority(deviceId.current, 1);
@@ -148,7 +151,7 @@ export const useBLEConnection = () => {
                 });
                 return;
             } else {
-                await BleManager.scan([config.serviceUUID], scanDuration, false, {
+                await BleManager.scan(serviceUUIDs, scanDuration, false, {
                     matchMode: BleScanMatchMode.Aggressive,
                     scanMode: BleScanMode.LowLatency,
                     callbackType: BleScanCallbackType.AllMatches,
@@ -188,6 +191,7 @@ export const useBLEConnection = () => {
             console.log("onDiscoverListener", peripheral)
             try {
                 deviceId.current = peripheral.id;
+                serviceUUID.current = peripheral.advertising?.serviceUUIDs?.[0] ?? null;
                 await BleManager.connect(peripheral.id);
                 if (Platform.OS === 'android') {
                     await BleManager.requestConnectionPriority(peripheral.id, 1);
@@ -284,11 +288,14 @@ export const useBLEConnection = () => {
         if (!deviceId.current) {
             throw new Error('Device ID is not set');
         }
+        if (!serviceUUID.current) {
+            throw new Error('Service UUID is not set');
+        }
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 const data = await BleManager.read(
                     deviceId.current,
-                    config.serviceUUID,
+                    serviceUUID.current,
                     characteristic
                 );
                 console.log("read characteristic", characteristic, data)
@@ -314,6 +321,9 @@ export const useBLEConnection = () => {
             if (!deviceId.current) {
                 throw new Error('Device ID is not set');
             }
+            if (!serviceUUID.current) {
+                throw new Error('Service UUID is not set');
+            }
             const bytes = typeof value === 'boolean' ? [value ? 1 : 0] : [Math.max(0, Math.min(255, Math.floor(value)))];
 
             const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
@@ -321,7 +331,7 @@ export const useBLEConnection = () => {
             
             await BleManager.write(
                     deviceId.current,
-                    config.serviceUUID,
+                    serviceUUID.current,
                     characteristic,
                     bytes,
                     1
@@ -360,7 +370,10 @@ export const useBLEConnection = () => {
         if (!deviceId.current) {
             throw new Error('Device ID is not set');
         }
-        await BleManager.startNotification(deviceId.current, config.serviceUUID, config.characteristics.SCALE_STATUS);
+        if (!serviceUUID.current) {
+            throw new Error('Service UUID is not set');
+        }
+        await BleManager.startNotification(deviceId.current, serviceUUID.current, config.characteristics.SCALE_STATUS);
     }
 
     const readAllSettings = useCallback(async () => {
