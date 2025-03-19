@@ -18,7 +18,7 @@ export enum ScaleStatus {
 
 export const scanDuration = 5;
 
-const serviceUUIDs = ['00000000-0000-0000-0000-000000000ffe', '00000000-0000-0000-0000-000000002a98'];
+const serviceUUIDs = ['00000000-0000-0000-0000-000000000ffe', '00002a98-0000-1000-8000-00805f9b34fb'];
 
 const config = {
     characteristics: {
