@@ -6,8 +6,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ThemeOverride = 'light' | 'dark' | 'auto';
 
+interface ExtendedTheme extends Theme {
+    colors: Theme['colors'] & {
+        white: string;
+    };
+}
+
 interface ThemeContextType {
-    theme: Theme;
+    theme: ExtendedTheme;
     isDarkMode: boolean;
     toggleTheme: () => void;
     themeOverride: ThemeOverride;

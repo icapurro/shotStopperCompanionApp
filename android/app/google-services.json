@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "551602871959",
+    "project_id": "shotstoppercompanion",
+    "storage_bucket": "shotstoppercompanion.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551602871959:android:01bbd14e72dad8bda053d2",
+        "android_client_info": {
+          "package_name": "com.icapurro.shotStopperCompanion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8y3Qa3kaGKmV1ZFdR4sLDNpY5tohsIxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

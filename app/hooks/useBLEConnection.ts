@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import BleManager, { BleScanCallbackType, BleScanMatchMode, BleScanMode, BleState, Peripheral } from 'react-native-ble-manager';
 import { AppState, AppStateStatus, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { check, request, PERMISSIONS, RESULTS, requestMultiple } from 'react-native-permissions';
+import { request, PERMISSIONS, RESULTS, requestMultiple } from 'react-native-permissions';
 
 interface BLEConnectionState {
     isConnected: boolean;
@@ -20,7 +19,9 @@ export const scanDuration = 5;
 
 const serviceUUIDs = ['00000000-0000-0000-0000-000000000ffe', '00002a98-0000-1000-8000-00805f9b34fb'];
 
-const config = {
+const currentConfig = {
+    deviceId: '',
+    serviceUUID: '00000000-0000-0000-0000-000000000ffe',
     characteristics: {
         WEIGHT_VALUE: '00000000-0000-0000-0000-00000000FF11',
         REED_SWITCH: '00000000-0000-0000-0000-00000000FF12',
@@ -31,6 +32,15 @@ const config = {
         DRIP_DELAY: '00000000-0000-0000-0000-00000000FF17',
         FIRMWARE_VERSION: '00000000-0000-0000-0000-00000000FF18',
         SCALE_STATUS: '00000000-0000-0000-0000-00000000FF19',
+    }
+}
+
+const legacyConfig = {
+    deviceId: '',
+    serviceUUID: '00002a98-0000-1000-8000-00805f9b34fb',
+    characteristics: {
+        WEIGHT_VALUE: '00000000-0000-0000-0000-000000002a98',
+        FIRMWARE_VERSION: '00000000-0000-0000-0000-00000000FF18',
     }
 }
 
@@ -70,11 +80,16 @@ const requestBlePermissions = async (): Promise<boolean> => {
     return false;
 };
 
+const getConfig = (serviceUUID: string, deviceId: string) => {
+    const config = serviceUUID === currentConfig.serviceUUID ? currentConfig : legacyConfig;
+    config.deviceId = deviceId;
+    return config;
+}
+
 export const useBLEConnection = () => {
 
     const isConnecting = useRef(false);
-    const deviceId = useRef<string | null>(null);
-    const serviceUUID = useRef<string | null>('');
+    const config = useRef<any>(currentConfig);
 
     const [state, setState] = useState<BLEConnectionState>({
         isConnected: false,
@@ -135,13 +150,13 @@ export const useBLEConnection = () => {
             // Check for existing connections
             const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
             if (connectedPeripherals[0]?.advertising?.localName === 'shotStopper') {
-                deviceId.current = connectedPeripherals[0].id;                    
-                serviceUUID.current = connectedPeripherals[0].advertising?.serviceUUIDs?.[0] ?? null;
-                await BleManager.connect(deviceId.current);
+                const serviceUUID = connectedPeripherals[0].advertising?.serviceUUIDs?.[0] ?? currentConfig.serviceUUID;
+                config.current = getConfig(serviceUUID, connectedPeripherals[0].id);
+                await BleManager.connect(config.current.deviceId);
                 if (Platform.OS === 'android') {
-                    await BleManager.requestConnectionPriority(deviceId.current, 1);
+                    await BleManager.requestConnectionPriority(config.current.deviceId, 1);
                 }
-                await BleManager.retrieveServices(deviceId.current);
+                await BleManager.retrieveServices(config.current.deviceId);
                 await readAllSettings();
                 setState({
                     isScanning: false,
@@ -160,7 +175,7 @@ export const useBLEConnection = () => {
 
         } catch (error) {
             console.error('Scan error:', error);
-            deviceId.current = null;
+            config.current.deviceId = null;
             setState(prev => ({
                 ...prev,
                 error: 'Failed to scan for devices',
@@ -174,9 +189,9 @@ export const useBLEConnection = () => {
     };
 
     const disconnectFromDevice = async () => {
-        if (deviceId.current) {
-            await BleManager.disconnect(deviceId.current);
-            deviceId.current = null;
+        if (config.current) {
+            await BleManager.disconnect(config.current.deviceId);
+            config.current.deviceId = null;
         }
         setState(prev => ({
             ...prev,
@@ -190,13 +205,13 @@ export const useBLEConnection = () => {
         const onDiscoverListener = BleManager.onDiscoverPeripheral(async (peripheral: Peripheral) => {
             console.log("onDiscoverListener", peripheral)
             try {
-                deviceId.current = peripheral.id;
-                serviceUUID.current = peripheral.advertising?.serviceUUIDs?.[0] ?? null;
-                await BleManager.connect(peripheral.id);
+                const serviceUUID = peripheral.advertising?.serviceUUIDs?.[0] ?? currentConfig.serviceUUID;
+                config.current = getConfig(serviceUUID, peripheral.id);
+                await BleManager.connect(config.current.deviceId);
                 if (Platform.OS === 'android') {
-                    await BleManager.requestConnectionPriority(peripheral.id, 1);
+                    await BleManager.requestConnectionPriority(config.current.deviceId, 1);
                 }
-                await BleManager.retrieveServices(peripheral.id);
+                await BleManager.retrieveServices(config.current.deviceId);
                 const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
                 console.log("connectedPeripherals", connectedPeripherals)
                 await readAllSettings();
@@ -233,7 +248,7 @@ export const useBLEConnection = () => {
         const onConnectListener = BleManager.onConnectPeripheral(async (args: any) => {
             console.log('Connected to:', args);
             // BleManager.stopScan();
-            deviceId.current = args.peripheral;
+            // deviceId.current = args.peripheral;
         });
 
         const onDisconnectListener = BleManager.onDisconnectPeripheral((event: any) => {
@@ -251,7 +266,7 @@ export const useBLEConnection = () => {
         });
 
         const onScaleStatusListener = BleManager.onDidUpdateValueForCharacteristic(async (args: any) => {
-            if (args.characteristic === config.characteristics.SCALE_STATUS) {
+            if (args.characteristic === config.current.characteristics.SCALE_STATUS) {
                 console.log("scaleStatusListener", args)
                 setSettings(prev => ({ ...prev, scaleStatus: args.value[0] }));
             }
@@ -268,7 +283,7 @@ export const useBLEConnection = () => {
             onDidUpdateStateListener.remove();
             onScaleStatusListener.remove();
         };
-    }, [deviceId, state.isConnected, state.error]);
+    }, [config, state.isConnected, state.error]);
 
     useEffect(() => {
         const appStateSubscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
@@ -285,23 +300,20 @@ export const useBLEConnection = () => {
     }, []);
 
     const readCharacteristic = async (characteristic: string, retries = 3): Promise<any> => {
-        if (!deviceId.current) {
-            throw new Error('Device ID is not set');
-        }
-        if (!serviceUUID.current) {
-            throw new Error('Service UUID is not set');
+        if (!config.current) {
+            throw new Error('Config is not set');
         }
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 const data = await BleManager.read(
-                    deviceId.current,
-                    serviceUUID.current,
+                    config.current.deviceId,
+                    config.current.serviceUUID,
                     characteristic
                 );
                 console.log("read characteristic", characteristic, data)
-                if (characteristic === config.characteristics.AUTO_TARE ||
-                    characteristic === config.characteristics.MOMENTARY ||
-                    characteristic === config.characteristics.REED_SWITCH) {
+                if (characteristic === config.current.characteristics.AUTO_TARE ||
+                    characteristic === config.current.characteristics.MOMENTARY ||
+                    characteristic === config.current.characteristics.REED_SWITCH) {
                     return data[0] === 1;
                 } else {
                     return data[0];
@@ -318,11 +330,8 @@ export const useBLEConnection = () => {
 
     const writeCharacteristic = async (characteristic: string, value: any): Promise<void> => {
         try {
-            if (!deviceId.current) {
-                throw new Error('Device ID is not set');
-            }
-            if (!serviceUUID.current) {
-                throw new Error('Service UUID is not set');
+            if (!config.current) {
+                throw new Error('Config is not set');
             }
             const bytes = typeof value === 'boolean' ? [value ? 1 : 0] : [Math.max(0, Math.min(255, Math.floor(value)))];
 
@@ -330,8 +339,8 @@ export const useBLEConnection = () => {
             console.log("connectedPeripherals", connectedPeripherals)
             
             await BleManager.write(
-                    deviceId.current,
-                    serviceUUID.current,
+                    config.current.deviceId,
+                    config.current.serviceUUID,
                     characteristic,
                     bytes,
                     1
@@ -352,28 +361,25 @@ export const useBLEConnection = () => {
         if (value === previousValue) {
             return;
         }
-        setSettings(prev => ({ ...prev, [key]: value }));
-        
         try {
             setIsLoading(true);
             await writeCharacteristic(characteristic, value);
+            
         } catch (error) {
             setSettings(prev => ({ ...prev, [key]: previousValue }));
             await disconnectFromDevice();
             throw error;
         } finally {
             setIsLoading(false);
+            setSettings(prev => ({ ...prev, [key]: value }));
         }
     };
 
     const listenForScaleStatus = async () => {
-        if (!deviceId.current) {
-            throw new Error('Device ID is not set');
+        if (!config.current) {
+            throw new Error('Config is not set');
         }
-        if (!serviceUUID.current) {
-            throw new Error('Service UUID is not set');
-        }
-        await BleManager.startNotification(deviceId.current, serviceUUID.current, config.characteristics.SCALE_STATUS);
+        await BleManager.startNotification(config.current.deviceId, config.current.serviceUUID, config.current.characteristics.SCALE_STATUS);
     }
 
     const readAllSettings = useCallback(async () => {
@@ -417,77 +423,76 @@ export const useBLEConnection = () => {
 
     // Export your update functions
     const updateAutoTare = useCallback((value: boolean) => 
-        updateSetting('autoTare', value, config.characteristics.AUTO_TARE), []);
+        updateSetting('autoTare', value, config.current.characteristics.AUTO_TARE), []);
 
     const readAutoTare = useCallback(() => {
-        console.log("reading autoTare", config.characteristics.AUTO_TARE)
-        return readCharacteristic(config.characteristics.AUTO_TARE)
-    }, [config.characteristics.AUTO_TARE]);
+        console.log("reading autoTare", config.current.characteristics.AUTO_TARE)
+        return readCharacteristic(config.current.characteristics.AUTO_TARE)
+    }, [config.current.characteristics.AUTO_TARE]);
 
     const updateWeightValue = useCallback((value: number) => {
-        return updateSetting('weightValue', value, config.characteristics.WEIGHT_VALUE)
+        return updateSetting('weightValue', value, config.current.characteristics.WEIGHT_VALUE)
     }, []);
 
     const readWeightValue = useCallback(async () => {
-        console.log("reading weightValue", config.characteristics.WEIGHT_VALUE)
-        const weightValue = await readCharacteristic(config.characteristics.WEIGHT_VALUE)
-        console.log("weightValue", weightValue)
+        console.log("reading weightValue", config.current.characteristics.WEIGHT_VALUE)
+        const weightValue = await readCharacteristic(config.current.characteristics.WEIGHT_VALUE)
         return Number(weightValue)
-    }, [config.characteristics.WEIGHT_VALUE]);
+    }, [config.current.characteristics.WEIGHT_VALUE]);
 
     const updateMomentary = useCallback((value: boolean) => 
-        updateSetting('momentary', value, config.characteristics.MOMENTARY), []);
+        updateSetting('momentary', value, config.current.characteristics.MOMENTARY), []);
 
     const readMomentary = useCallback(() => {
-        console.log("reading momentary", config.characteristics.MOMENTARY)
-        return readCharacteristic(config.characteristics.MOMENTARY)
-    }, [config.characteristics.MOMENTARY]);
+        console.log("reading momentary", config.current.characteristics.MOMENTARY)
+        return readCharacteristic(config.current.characteristics.MOMENTARY)
+    }, [config.current.characteristics.MOMENTARY]);
 
     const updateReedSwitch = useCallback((value: boolean) => 
-        updateSetting('reedSwitch', value, config.characteristics.REED_SWITCH), []);
+        updateSetting('reedSwitch', value, config.current.characteristics.REED_SWITCH), []);
 
     const readReedSwitch = useCallback(() => {
-        console.log("reading reedSwitch", config.characteristics.REED_SWITCH)
-        return readCharacteristic(config.characteristics.REED_SWITCH)
-    }, [config.characteristics.REED_SWITCH]);
+        console.log("reading reedSwitch", config.current.characteristics.REED_SWITCH)
+        return readCharacteristic(config.current.characteristics.REED_SWITCH)
+    }, [config.current.characteristics.REED_SWITCH]);
 
     const updateMinShotDuration = useCallback((value: number) => 
-        updateSetting('minShotDuration', value, config.characteristics.MIN_SHOT_DURATION), []);
+        updateSetting('minShotDuration', value, config.current.characteristics.MIN_SHOT_DURATION), []);
 
     const readMinShotDuration = useCallback(() => {
-        console.log("reading minShotDuration", config.characteristics.MIN_SHOT_DURATION)
-        return readCharacteristic(config.characteristics.MIN_SHOT_DURATION)
-    }, [config.characteristics.MIN_SHOT_DURATION]);
+        console.log("reading minShotDuration", config.current.characteristics.MIN_SHOT_DURATION)
+        return readCharacteristic(config.current.characteristics.MIN_SHOT_DURATION)
+    }, [config.current.characteristics.MIN_SHOT_DURATION]);
 
     const updateMaxShotDuration = useCallback((value: number) => 
-        updateSetting('maxShotDuration', value, config.characteristics.MAX_SHOT_DURATION), []);
+        updateSetting('maxShotDuration', value, config.current.characteristics.MAX_SHOT_DURATION), []);
 
     const readMaxShotDuration = useCallback(() => {
-        console.log("reading maxShotDuration", config.characteristics.MAX_SHOT_DURATION)
-        return readCharacteristic(config.characteristics.MAX_SHOT_DURATION)
-    }, [config.characteristics.MAX_SHOT_DURATION]);
+        console.log("reading maxShotDuration", config.current.characteristics.MAX_SHOT_DURATION)
+        return readCharacteristic(config.current.characteristics.MAX_SHOT_DURATION)
+    }, [config.current.characteristics.MAX_SHOT_DURATION]);
 
     const updateDripDelay = useCallback((value: number) => 
-        updateSetting('dripDelay', value, config.characteristics.DRIP_DELAY), []);
+        updateSetting('dripDelay', value, config.current.characteristics.DRIP_DELAY), []);
 
     const readDripDelay = useCallback(() => {
-        console.log("reading dripDelay", config.characteristics.DRIP_DELAY)
-        return readCharacteristic(config.characteristics.DRIP_DELAY)
-    }, [config.characteristics.DRIP_DELAY]);
+        console.log("reading dripDelay", config.current.characteristics.DRIP_DELAY)
+        return readCharacteristic(config.current.characteristics.DRIP_DELAY)
+    }, [config.current.characteristics.DRIP_DELAY]);
 
     const readFirmwareVersion = useCallback(() => {
-        console.log("reading firmwareVersion", config.characteristics.FIRMWARE_VERSION)
-        return readCharacteristic(config.characteristics.FIRMWARE_VERSION, 1)
-    }, [config.characteristics.FIRMWARE_VERSION]);
+        console.log("reading firmwareVersion", config.current.characteristics.FIRMWARE_VERSION)
+        return readCharacteristic(config.current.characteristics.FIRMWARE_VERSION, 1)
+    }, [config.current.characteristics.FIRMWARE_VERSION]);
 
     const resetToDefaults = useCallback(async () => {
-        await writeCharacteristic(config.characteristics.WEIGHT_VALUE, 36);
-        await writeCharacteristic(config.characteristics.AUTO_TARE, true);
-        await writeCharacteristic(config.characteristics.MOMENTARY, false);
-        await writeCharacteristic(config.characteristics.REED_SWITCH, false);
-        await writeCharacteristic(config.characteristics.MIN_SHOT_DURATION, 3);
-        await writeCharacteristic(config.characteristics.MAX_SHOT_DURATION, 50);
-        await writeCharacteristic(config.characteristics.DRIP_DELAY, 3);
+        await writeCharacteristic(config.current.characteristics.WEIGHT_VALUE, 36);
+        await writeCharacteristic(config.current.characteristics.AUTO_TARE, true);
+        await writeCharacteristic(config.current.characteristics.MOMENTARY, false);
+        await writeCharacteristic(config.current.characteristics.REED_SWITCH, false);
+        await writeCharacteristic(config.current.characteristics.MIN_SHOT_DURATION, 3);
+        await writeCharacteristic(config.current.characteristics.MAX_SHOT_DURATION, 50);
+        await writeCharacteristic(config.current.characteristics.DRIP_DELAY, 3);
         setSettings(prev => ({
             ...prev,
             autoTare: true,
@@ -500,7 +505,7 @@ export const useBLEConnection = () => {
         }));
     }, []);
 
-    return {
+    const bleConnection = useMemo(() => ({
         ...state,
         ...settings,
         isLoading,
@@ -522,6 +527,8 @@ export const useBLEConnection = () => {
         readDripDelay,
         readAllSettings,
         resetToDefaults,
-        deviceId,
-    };
+        deviceId: config.current?.deviceId,
+    }), [state, settings, isLoading, isConnecting, connectToDevice, updateAutoTare, readAutoTare, updateWeightValue, readWeightValue, updateMomentary, readMomentary, updateReedSwitch, readReedSwitch, updateMinShotDuration, readMinShotDuration, updateMaxShotDuration, readMaxShotDuration, updateDripDelay, readDripDelay, readAllSettings, resetToDefaults, config.current?.deviceId]);
+
+    return bleConnection;
 }; 

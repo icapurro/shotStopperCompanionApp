@@ -314,7 +314,7 @@ const ResetButton: React.FC = () => {
     );
 };
 
-export default function Settings() {
+export default React.memo(function Settings() {
     const { theme } = useThemeContext();
     const insets = useSafeAreaInsets();
 
@@ -414,7 +414,7 @@ export default function Settings() {
             </ScrollView>
         </SafeAreaView>
     );
-}
+});
 
 const styles = StyleSheet.create({
     container: {

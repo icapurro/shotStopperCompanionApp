@@ -10,11 +10,15 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.icapurro.shotStopperCompanion",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Required to connect to the shotStopper device.",
         "NSBluetoothPeripheralUsageDescription": "Required to connect to the shotStopper device.",
-        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral"]
+        "UIBackgroundModes": [
+          "bluetooth-central",
+          "bluetooth-peripheral"
+        ]
       }
     },
     "android": {
@@ -22,6 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.icapurro.shotStopperCompanion",
       "permissions": [
         "android.permission.BLUETOOTH_CONNECT",
@@ -69,6 +74,16 @@
           "podPermissions": [
             "Bluetooth"
           ]
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],

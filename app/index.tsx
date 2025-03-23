@@ -6,14 +6,16 @@ import {
   Easing,
   StyleSheet,
   TouchableOpacity,
-  Vibration,
   View,
   Text,
+  FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Feather } from "@expo/vector-icons";
-import { useNavigation, usePathname, useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { useThemeContext } from "./hooks/useThemeContext";
 import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
 import { ScaleStatus } from "./hooks/useBLEConnection";
@@ -22,23 +24,19 @@ const color = {
   black: "#111110",
 };
 
-const start = 14;
-const weights = [...Array(37).keys()].map((i) => (i === 0 ? start : i + start));
+const start = 1;
+const weights = [...Array(99).keys()].map((i) => (i === 0 ? start : i + start));
 const ITEM_SIZE = width * 0.38;
 const ITEM_SPACING = (width - ITEM_SIZE) / 2;
 
-export default function App() {
+export default React.memo(function App() {
   const { theme } = useThemeContext();
   const colors = theme.colors;
   const router = useRouter();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
-  const animatedStopValue = React.useRef(new Animated.Value(0)).current;
   const animatedLoadingValue = React.useState(new Animated.Value(0))[0];
-  const weightValue = React.useRef(new Animated.Value(height)).current;
-  const textAnimatedValue = React.useRef(new Animated.Value(height)).current;
-  const [currentWeight, setCurrentWeight] = React.useState(weights[0]);
   const lastVibrationIndex = React.useRef(0);
-  const flatList = React.createRef();
+  const flatList = React.createRef<FlatList<number>>();
   const navigation = useNavigation();
   
   const { 
@@ -61,21 +59,8 @@ export default function App() {
   }, [navigation]);
 
   React.useEffect(() => {
-    const listener = textAnimatedValue.addListener(({ value }) => {
-      console.log("value", value)
-      setCurrentWeight(value);
-    });
-
-    return () => {
-      weightValue.removeListener(listener);
-      weightValue.removeAllListeners();
-    };
-  }, [isConnected]);
-
-  React.useEffect(() => {
     const listener = scrollX.addListener(({ value }) => {
       const currentIndex = Math.floor(value / ITEM_SIZE);
-
       if (currentIndex !== lastVibrationIndex.current) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         lastVibrationIndex.current = currentIndex; // Update last triggered index
@@ -87,60 +72,7 @@ export default function App() {
     };
   }, [scrollX]);
 
-  const animation = React.useCallback(() => {
-    textAnimatedValue.setValue(0);
-    Animated.sequence([
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(weightValue, {
-          toValue: 0,
-          duration: goalWeight * 1000,
-          useNativeDriver: true,
-          easing: Easing.linear,
-        }),
-        Animated.timing(textAnimatedValue, {
-          toValue: goalWeight,
-          duration: goalWeight * 1000,
-          useNativeDriver: true,
-          easing: Easing.linear,
-        }),
-      ]),
-      Animated.delay(100),
-    ]).start(() => {
-      Vibration.cancel();
-      Vibration.vibrate();
-      // timerValue.setValue(height);
-      // textAnimatedValue.setValue(0);
-      Animated.timing(animatedStopValue, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [goalWeight]);
 
-  const stopBrewIndicator = () => {
-      weightValue.setValue(height);
-      Animated.timing(textAnimatedValue, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }).start();
-      Animated.timing(animatedValue, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-      Animated.timing(animatedStopValue, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-  }
 
   const handleOnPressNavigation = (item: number) => {
     return (event: any) => {
@@ -153,11 +85,6 @@ export default function App() {
       }
     }
   }
-
-  const buttonTranslateY = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 200],
-  });
 
   const opacity = animatedValue.interpolate({
     inputRange: [0, 1],
@@ -180,7 +107,7 @@ export default function App() {
         useNativeDriver: true,
       }).start();
     }
-  }, [bleLoading]);
+  }, [animatedLoadingValue, bleLoading]);
 
   const loadingOpacity = animatedLoadingValue.interpolate({
     inputRange: [0, 1],
@@ -189,40 +116,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Animated coffee fill */}
-      {/* <Animated.View
-        style={[
-          StyleSheet.absoluteFillObject,
-          {
-            height,
-            width,
-            backgroundColor: colors.primary,
-            transform: [
-              {
-                translateY: timerValue,
-              },
-            ],
-          },
-        ]}
-      />  */}
-      {/* <Animated.View
-        style={[
-          StyleSheet.absoluteFillObject,
-          {
-            transform: [
-              {
-                translateY: buttonTranslateY,
-              },
-            ],
-            justifyContent: "flex-end",
-            alignItems: "center",
-            paddingBottom: 100,
-          },
-        ]}>
-        <TouchableOpacity onPress={animation}>
-          <View style={styles.roundButton} />
-        </TouchableOpacity>
-      </Animated.View> */}
+
       <View
         style={{
           position: "absolute",
@@ -231,47 +125,14 @@ export default function App() {
           right: 0,
           flex: 1,
         }}>
-        <Animated.View
-          style={{
-            opacity: animatedValue,
-            width: ITEM_SIZE * 2,
-            alignItems: "center",
-            justifyContent: "center",
-            position: "absolute",
-            alignSelf: "center",
-          }}>
-          {/* seconds */}
-          <Animated.Text style={styles.text}>
-            {currentWeight.toFixed(0)}
-            <Animated.Text style={{fontSize: ITEM_SIZE * 0.3}}>s</Animated.Text>
-          </Animated.Text>
-          {/* grams */}
-          <Animated.Text style={[styles.text, {fontSize: ITEM_SIZE * 0.3}]}>
-            ({currentWeight.toFixed(2)}
-            <Animated.Text style={{fontSize: ITEM_SIZE * 0.1}}>g</Animated.Text>
-            )
-          </Animated.Text>
-          <Animated.View
-            style={[
-              {
-                opacity: animatedStopValue,
-                alignItems: 'center',
-                paddingTop: 100,
-              },
-            ]}>
-            <TouchableOpacity onPress={stopBrewIndicator}>
-              <Animated.View style={styles.roundButton}>
-                <Feather name="coffee" size={32} color={colors.text} onPress={stopBrewIndicator}/>
-              </Animated.View>
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
         <Animated.FlatList
           ref={flatList}
           showsHorizontalScrollIndicator={false}
           data={weights}
           keyExtractor={(item) => item.toString()}
           initialScrollIndex={goalWeight - start}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           horizontal
           getItemLayout={(data, index) => ({
             length: ITEM_SIZE, // Adjust based on item width
@@ -282,12 +143,11 @@ export default function App() {
           decelerationRate='fast'
           contentContainerStyle={{ paddingHorizontal: ITEM_SPACING }}
           style={{ flexGrow: 0, opacity }}
-          onMomentumScrollEnd={(e) => {
-            const value = weights[Math.round(e.nativeEvent.contentOffset.x / ITEM_SIZE)];
+          onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const offsetX = e.nativeEvent.contentOffset.x;
+            const value = weights[Math.round(offsetX / ITEM_SIZE)];
             if (isConnected) {
-              updateWeightValue(value).catch(error => {
-                console.error('Failed to update weight value:', error);
-              });
+              updateWeightValue(value)
             }
           }}
           onScroll={Animated.event(
@@ -312,7 +172,7 @@ export default function App() {
               extrapolate: "clamp",
             });
             return (
-              <View style={{ width: ITEM_SIZE }}>
+              <View style={{ width: ITEM_SIZE, height: width }}>
                 <Animated.Text
                   onPress={handleOnPressNavigation(item)}
                   style={[
@@ -323,7 +183,7 @@ export default function App() {
                       color: colors.primary,
                       transform: [
                         {
-                          perspective: ITEM_SIZE,
+                          perspective: ITEM_SIZE * 4,
                         },
                         {
                           scale,
@@ -332,7 +192,7 @@ export default function App() {
                     },
                   ]}>
                   {item}
-                  <Animated.Text style={{fontSize: ITEM_SIZE * 0.3}}>g</Animated.Text>
+                  <Text style={{fontSize: ITEM_SIZE * 0.3}}>g</Text>
                 </Animated.Text>
               </View>
             );
@@ -347,7 +207,6 @@ export default function App() {
         ) : (
             <Animated.View style={{ opacity: loadingOpacity }}>
               <TouchableOpacity onPress={() => {
-                  console.log("press")
                   router.navigate({ pathname: "/settings" });
                 }}>
                 <Feather name="sliders" style={{paddingTop: 10}} size={24} color={colors.text}/>
@@ -370,7 +229,7 @@ export default function App() {
       )}
     </SafeAreaView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
