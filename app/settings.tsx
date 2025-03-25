@@ -11,6 +11,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
 import useDebounce from './hooks/useDebounce';
 import { useState, useEffect } from 'react';
+import DemoMode from './components/DemoMode';
 
 interface SettingsItemProps {
     title: string;
@@ -314,7 +315,7 @@ const ResetButton: React.FC = () => {
     );
 };
 
-export default React.memo(function Settings() {
+export default function Settings() {
     const { theme } = useThemeContext();
     const insets = useSafeAreaInsets();
 
@@ -370,7 +371,7 @@ export default React.memo(function Settings() {
             <View style={[styles.topBar, styles.horizontal]}>
                 <Text style={[styles.titleText, {color: theme.colors.text}]}>shotStopper Settings</Text>
                 {bleLoading ? (
-                    <ActivityIndicator size="small" color={theme.colors.text} />
+                    <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: 40, marginTop: 20}} />
                 ) : (
                     <Animated.View style={{ opacity: loadingOpacity }}>
                         <TouchableOpacity onPress={() => {
@@ -412,9 +413,10 @@ export default React.memo(function Settings() {
                 )}
                 <Text style={[styles.paragraph, {color: theme.colors.text, textAlign: 'center', marginBottom: 20}]}>Firmware version: {firmwareVersion}</Text>
             </ScrollView>
+            <DemoMode />
         </SafeAreaView>
     );
-});
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -431,7 +433,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         top: 0,
-        color: 'white',
     },
     itemContainer: {
         alignItems: 'center',

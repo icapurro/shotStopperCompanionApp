@@ -1,18 +1,19 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text, TouchableWithoutFeedback } from 'react-native';
 import { View as MView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useThemeContext } from '../hooks/useThemeContext';
 import { BLEConnectionProvider, useBLEConnectionContext } from '../contexts/BLEConnectionContext';
 import { StatusBar } from 'expo-status-bar';
+import DemoMode from './DemoMode';
 
 interface BLEConnectionGuardProps {
     children: React.ReactNode;
 }
 
 function Guard({ children }: { children: React.ReactNode }) {
-    const { isConnected, isScanning, connectToDevice, isConnecting, bluetoothState } = useBLEConnectionContext();
+    const { isConnected, isScanning, connectToDevice, isConnecting, bluetoothState, demoConnectToDevice, isDemoMode } = useBLEConnectionContext();
     const { theme, isDarkMode } = useThemeContext();
     const colors = theme.colors;
 
@@ -43,7 +44,13 @@ function Guard({ children }: { children: React.ReactNode }) {
                 <View style={styles.textContainer}>
                     {!isScanning && !isConnecting.current && <Text style={[styles.paragraph, {color: colors.text, textAlign: 'center'}]}>{bluetoothState === 'on' ? 'Tap to connect' : 'Bluetooth is off'}</Text>}
                 </View>
+                {/* This long press is to enable demo mode so the app store reviewer can approve the app */}
+                <TouchableWithoutFeedback onPress={()=>console.log("short press")} onLongPress={demoConnectToDevice}>
+                    <View style={{position: 'absolute', top: 60, left: 10, padding: 60}}>
+                    </View>
+                </TouchableWithoutFeedback>
                 <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+                <DemoMode />
             </Pressable>
         );
     }

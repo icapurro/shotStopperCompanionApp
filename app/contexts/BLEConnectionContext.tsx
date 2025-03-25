@@ -37,6 +37,8 @@ interface BLEConnectionState {
     readAllSettings: () => Promise<void>;
     scaleStatus: ScaleStatus;
     firmwareVersion: number;
+    isDemoMode: RefObject<boolean>;
+    demoConnectToDevice: () => Promise<void>;
 }
 
 const BLEConnectionContext = createContext<BLEConnectionState | null>(null);

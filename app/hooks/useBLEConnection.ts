@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import BleManager, { BleScanCallbackType, BleScanMatchMode, BleScanMode, BleState, Peripheral } from 'react-native-ble-manager';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import { request, PERMISSIONS, RESULTS, requestMultiple } from 'react-native-permissions';
@@ -90,6 +90,7 @@ export const useBLEConnection = () => {
 
     const isConnecting = useRef(false);
     const config = useRef<any>(currentConfig);
+    const isDemoMode = useRef(false);
 
     const [state, setState] = useState<BLEConnectionState>({
         isConnected: false,
@@ -115,7 +116,24 @@ export const useBLEConnection = () => {
     const delay = (ms: number): Promise<void> => 
         new Promise(resolve => setTimeout(resolve, ms));
 
+    const demoConnectToDevice = async () => {
+        isDemoMode.current = true;
+        isConnecting.current = true;
+        setState(prev => ({ ...prev, error: null, isScanning: true }));
+        await delay(3000);
+        config.current = legacyConfig;
+        config.current.deviceId = 'demo';
+        setState(prev => ({ ...prev, isScanning: false, isConnected: true }));
+        setSettings(prev => ({ ...prev, firmwareVersion: 1 }));
+        isConnecting.current = false;
+    }
+
     const connectToDevice = async () => {
+        if (isDemoMode.current) {
+            await demoConnectToDevice();
+            return;
+        }
+
         if (isConnecting.current) {
             console.log('Already scanning, skipping...');
             return;
@@ -175,7 +193,7 @@ export const useBLEConnection = () => {
 
         } catch (error) {
             console.error('Scan error:', error);
-            config.current.deviceId = null;
+            config.current = null;
             setState(prev => ({
                 ...prev,
                 error: 'Failed to scan for devices',
@@ -191,7 +209,7 @@ export const useBLEConnection = () => {
     const disconnectFromDevice = async () => {
         if (config.current) {
             await BleManager.disconnect(config.current.deviceId);
-            config.current.deviceId = null;
+            config.current = null;
         }
         setState(prev => ({
             ...prev,
@@ -330,6 +348,10 @@ export const useBLEConnection = () => {
 
     const writeCharacteristic = async (characteristic: string, value: any): Promise<void> => {
         try {
+            if (isDemoMode.current) {
+                await delay(1000);
+                return;
+            }
             if (!config.current) {
                 throw new Error('Config is not set');
             }
@@ -358,20 +380,16 @@ export const useBLEConnection = () => {
         characteristic: string
     ): Promise<void> => {
         const previousValue = settings[key];
-        if (value === previousValue) {
-            return;
-        }
         try {
             setIsLoading(true);
+            setSettings(prev => ({ ...prev, [key]: value }));
             await writeCharacteristic(characteristic, value);
-            
         } catch (error) {
             setSettings(prev => ({ ...prev, [key]: previousValue }));
             await disconnectFromDevice();
             throw error;
         } finally {
             setIsLoading(false);
-            setSettings(prev => ({ ...prev, [key]: value }));
         }
     };
 
@@ -437,6 +455,7 @@ export const useBLEConnection = () => {
     const readWeightValue = useCallback(async () => {
         console.log("reading weightValue", config.current.characteristics.WEIGHT_VALUE)
         const weightValue = await readCharacteristic(config.current.characteristics.WEIGHT_VALUE)
+        console.log("weightValue", weightValue)
         return Number(weightValue)
     }, [config.current.characteristics.WEIGHT_VALUE]);
 
@@ -505,7 +524,7 @@ export const useBLEConnection = () => {
         }));
     }, []);
 
-    const bleConnection = useMemo(() => ({
+    return {
         ...state,
         ...settings,
         isLoading,
@@ -528,7 +547,7 @@ export const useBLEConnection = () => {
         readAllSettings,
         resetToDefaults,
         deviceId: config.current?.deviceId,
-    }), [state, settings, isLoading, isConnecting, connectToDevice, updateAutoTare, readAutoTare, updateWeightValue, readWeightValue, updateMomentary, readMomentary, updateReedSwitch, readReedSwitch, updateMinShotDuration, readMinShotDuration, updateMaxShotDuration, readMaxShotDuration, updateDripDelay, readDripDelay, readAllSettings, resetToDefaults, config.current?.deviceId]);
-
-    return bleConnection;
+        isDemoMode,
+        demoConnectToDevice
+    };
 }; 

@@ -19,6 +19,7 @@ import { useNavigation, useRouter } from "expo-router";
 import { useThemeContext } from "./hooks/useThemeContext";
 import { useBLEConnectionContext } from './contexts/BLEConnectionContext';
 import { ScaleStatus } from "./hooks/useBLEConnection";
+import DemoMode from "./components/DemoMode";
 const { width, height } = Dimensions.get("screen");
 const color = {
   black: "#111110",
@@ -29,7 +30,7 @@ const weights = [...Array(99).keys()].map((i) => (i === 0 ? start : i + start));
 const ITEM_SIZE = width * 0.38;
 const ITEM_SPACING = (width - ITEM_SIZE) / 2;
 
-export default React.memo(function App() {
+export default function App() {
   const { theme } = useThemeContext();
   const colors = theme.colors;
   const router = useRouter();
@@ -227,9 +228,10 @@ export default React.memo(function App() {
         </View>
       </Animated.View>
       )}
+      <DemoMode />
     </SafeAreaView>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {
